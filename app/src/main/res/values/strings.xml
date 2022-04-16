@@ -2,4 +2,5 @@
     <string name="app_name">Sports</string>
     <string name="item_img_sport">Imagen del deporte</string>
     <string name="main_retrofit_in_progress">Consultando...</string>
+    <string name="main_hint_insert">Introduzca un número</string>
 </resources>
