@@ -3,11 +3,15 @@ package com.cursosandroidant.sports
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.cursosandroidant.sports.databinding.ActivityMainBinding
 import com.cursosandroidant.sports.retrofit.WeatherEntity
 import com.cursosandroidant.sports.retrofit.WeatherService
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -68,10 +72,12 @@ class MainActivity : AppCompatActivity(), OnClickListener {
      * Retrofit
      * */
     private fun setupActionBar() {
-        getWeather()
+        lifecycleScope.launch {
+            formatResponse(getWeather())
+        }
     }
 
-    private fun getWeather(){
+    private suspend fun getWeather(): WeatherEntity = withContext(Dispatchers.IO){
         setupTitle(getString(R.string.main_retrofit_in_progress))
 
         val retrofit: Retrofit = Retrofit.Builder()
@@ -81,16 +87,7 @@ class MainActivity : AppCompatActivity(), OnClickListener {
 
         val service: WeatherService = retrofit.create(WeatherService::class.java)
 
-        val call = service.getWeatherById(5095808, "metric", "4621d3c0b8e15ed89d674ded864db076")
-        call.enqueue(object : Callback<WeatherEntity> {
-            override fun onResponse(call: Call<WeatherEntity>, response: Response<WeatherEntity>) {
-                response.body()?.let { formatResponse(it) }
-            }
-
-            override fun onFailure(call: Call<WeatherEntity>, t: Throwable) {
-                Log.e("Retrofit", "Error al consultar el clima.")
-            }
-        })
+        service.getWeatherById(5095808L, "metric", "4621d3c0b8e15ed89d674ded864db076")
     }
 
     private fun formatResponse(weatherEntity: WeatherEntity){
