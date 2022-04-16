@@ -24,6 +24,10 @@ class MainActivity : AppCompatActivity(), OnClickListener {
     private lateinit var adapter: SportAdapter
     private lateinit var fibScope: Job
 
+    private val exceptionHandler = CoroutineExceptionHandler { coroutineContext, throwable ->
+        Log.e("FibErro", "$throwable in $coroutineContext")
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -135,15 +139,17 @@ class MainActivity : AppCompatActivity(), OnClickListener {
 
     private fun setupTextField() {
         binding.etNumber.addTextChangedListener {
-            binding.tvResult.text = "Calculando...."
+            if (this::fibScope.isInitialized && fibScope.isActive) fibScope.cancel()
+
+            binding.tvResult.text = "Calculando..."
             val time = System.currentTimeMillis()
 
-            fibScope = CoroutineScope(Job()).launch(Dispatchers.Default) {
+            fibScope = CoroutineScope(Job() + exceptionHandler).launch(Dispatchers.Default) {
                 if (it.toString().isNotEmpty()) {
                     val fib = fibonacci(it.toString().toLong())
                     withContext(Dispatchers.Main) {
                         binding.tvResult.text =
-                            "R = ${"%,d".format(fib)}\n (in ${System.currentTimeMillis() - time}) ms"
+                            "R= ${"%,d".format(fib)}\n(in ${System.currentTimeMillis() - time})ms"
                     }
                 }
             }
@@ -151,8 +157,15 @@ class MainActivity : AppCompatActivity(), OnClickListener {
     }
 
     private fun fibonacci(n: Long): Long {
+        if (fibScope.isCancelled) throw Exception("Número modificado antes de completar el cálculo.")
+
         return if (n <= 1) n
         else fibonacci(n - 1) + fibonacci(n - 2)
+    }
+
+    override fun onDestroy() {
+        if (fibScope.isActive) fibScope.cancel()
+        super.onDestroy()
     }
 
     /**
