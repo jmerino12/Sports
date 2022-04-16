@@ -10,11 +10,16 @@ import android.widget.ImageView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import coil.imageLoader
+import coil.request.ImageRequest
+import coil.transform.BlurTransformation
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.cursosandroidant.sports.databinding.ItemSportBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /****
  * Project: Sports
@@ -48,40 +53,39 @@ class SportAdapter(private val listener: OnClickListener) :
 
             binding.tvName.text = sport.name
 
-            Glide.with(context)
-                .asBitmap()
-                .load(sport.imgUrl)
-                .diskCacheStrategy(DiskCacheStrategy.NONE)
-                .centerCrop()
-                .into(object : CustomTarget<Bitmap>(1280, 720) {
-                    override fun onResourceReady(
-                        resource: Bitmap,
-                        transition: Transition<in Bitmap>?
-                    ) {
-                        binding.progressBar.visibility = View.GONE
-                        binding.imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
-                        binding.imgPhoto.setImageBitmap(resource)
-                    }
-
-                    override fun onLoadStarted(placeholder: Drawable?) {
-                        super.onLoadStarted(placeholder)
+            val request = ImageRequest.Builder(context)
+                .data(sport.imgUrl)
+                .crossfade(true)
+                .transformations(
+                    listOf(
+                        BlurTransformation(context, 25f)
+                    )
+                )
+                .size(1280, 720)
+                .target(
+                    onStart = {
                         binding.imgPhoto.setImageResource(R.drawable.ic_access_time)
-                    }
 
-                    override fun onLoadFailed(errorDrawable: Drawable?) {
-                        super.onLoadFailed(errorDrawable)
+                    },
+                    onError = {
                         binding.progressBar.visibility = View.GONE
                         binding.imgPhoto.setImageResource(R.drawable.ic_error_outline)
-                    }
+                    },
 
-                    override fun onLoadCleared(placeholder: Drawable?) {}
-                })
+                    onSuccess = {
+                        binding.progressBar.visibility = View.GONE
+                        binding.imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
+                        binding.imgPhoto.setImageDrawable(it)
+                    }
+                )
+                .build()
+            context.imageLoader.enqueue(request)
         }
     }
 
     override fun getItemCount(): Int = sports.size
 
-    fun add(sport: Sport) {
+    suspend fun add(sport: Sport) = withContext(Dispatchers.Main) {
         if (!sports.contains(sport)) {
             sports.add(sport)
             notifyItemInserted(sports.size - 1)

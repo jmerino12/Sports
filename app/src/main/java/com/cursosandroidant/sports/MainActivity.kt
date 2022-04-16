@@ -45,8 +45,8 @@ class MainActivity : AppCompatActivity(), OnClickListener {
         binding.recyclerView.apply {
             setHasFixedSize(true)
             layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = listAdapter
-            //adapter = this@MainActivity.adapter
+            //adapter = listAdapter
+            adapter = this@MainActivity.adapter
         }
     }
 
@@ -98,10 +98,12 @@ class MainActivity : AppCompatActivity(), OnClickListener {
 
     private fun getAllSports() {
         val sportsData = sports()
-        listAdapter.submitList(sportsData)
-        /*sportsData.forEach { sport ->
-            adapter.add(sport)
-        }*/
+        //listAdapter.submitList(sportsData)
+        lifecycleScope.launch {
+            sportsData.forEach { sport ->
+                adapter.add(sport)
+            }
+        }
     }
 
     /**
