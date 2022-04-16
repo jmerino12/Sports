@@ -10,9 +10,7 @@ import com.cursosandroidant.sports.databinding.ActivityMainBinding
 import com.cursosandroidant.sports.retrofit.WeatherEntity
 import com.cursosandroidant.sports.retrofit.WeatherService
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -24,6 +22,7 @@ class MainActivity : AppCompatActivity(), OnClickListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var listAdapter: SportListAdapter
     private lateinit var adapter: SportAdapter
+    private lateinit var fibScope: Job
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -134,22 +133,19 @@ class MainActivity : AppCompatActivity(), OnClickListener {
         supportActionBar?.let { title = newTitle }
     }
 
-    /**
-     * OnClickListener
-     * */
-    override fun onClick(sport: Sport) {
-        Snackbar.make(binding.root, sport.name, Snackbar.LENGTH_SHORT).show()
-    }
-
     private fun setupTextField() {
         binding.etNumber.addTextChangedListener {
             binding.tvResult.text = "Calculando...."
             val time = System.currentTimeMillis()
 
-            if (it.toString().isNotEmpty()) {
-                val fib = fibonacci(it.toString().toLong())
-                binding.tvResult.text =
-                    "R = ${"%,d".format(fib)}\n (in ${System.currentTimeMillis() - time}) ms"
+            fibScope = CoroutineScope(Job()).launch(Dispatchers.Default) {
+                if (it.toString().isNotEmpty()) {
+                    val fib = fibonacci(it.toString().toLong())
+                    withContext(Dispatchers.Main) {
+                        binding.tvResult.text =
+                            "R = ${"%,d".format(fib)}\n (in ${System.currentTimeMillis() - time}) ms"
+                    }
+                }
             }
         }
     }
@@ -158,4 +154,13 @@ class MainActivity : AppCompatActivity(), OnClickListener {
         return if (n <= 1) n
         else fibonacci(n - 1) + fibonacci(n - 2)
     }
+
+    /**
+     * OnClickListener
+     * */
+    override fun onClick(sport: Sport) {
+        Snackbar.make(binding.root, sport.name, Snackbar.LENGTH_SHORT).show()
+    }
+
+
 }
