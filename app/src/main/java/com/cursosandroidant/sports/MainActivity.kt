@@ -11,6 +11,10 @@ import com.cursosandroidant.sports.retrofit.WeatherEntity
 import com.cursosandroidant.sports.retrofit.WeatherService
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -96,12 +100,22 @@ class MainActivity : AppCompatActivity(), OnClickListener {
         )
     }
 
+    private fun getSportsFlow() : Flow<Sport> = flow {
+        sports().forEach {
+            delay(1_000)
+            emit(it)
+        }
+    }.flowOn(Dispatchers.Default) // Si fuera una BD remota fuera IO
+
     private fun getAllSports() {
-        val sportsData = sports()
+        //val sportsData = sports()
         //listAdapter.submitList(sportsData)
         lifecycleScope.launch {
-            sportsData.forEach { sport ->
+            /*sportsData.forEach { sport ->
                 adapter.add(sport)
+            }*/
+            getSportsFlow().collect{
+                adapter.add(it)
             }
         }
     }
